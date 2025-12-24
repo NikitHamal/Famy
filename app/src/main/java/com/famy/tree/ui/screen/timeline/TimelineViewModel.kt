@@ -105,9 +105,8 @@ class TimelineViewModel @Inject constructor(
             lifeEvents.forEach { event ->
                 val member = memberMap[event.memberId]
                 if (member != null && event.eventDate != null) {
-                    val eventType = when {
-                        event.type.contains("marriage", ignoreCase = true) ||
-                                event.type.contains("wedding", ignoreCase = true) -> TimelineEventType.MARRIAGE
+                    val eventType = when (event.type) {
+                        LifeEventKind.MARRIAGE -> TimelineEventType.MARRIAGE
                         else -> TimelineEventType.CUSTOM
                     }
                     add(
@@ -120,7 +119,7 @@ class TimelineViewModel @Inject constructor(
                             title = event.title,
                             description = event.description,
                             date = event.eventDate,
-                            place = event.location
+                            place = event.eventPlace
                         )
                     )
                 }
