@@ -63,14 +63,19 @@ class GalleryViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
 
     // Reactive uiState using Flow.combine - no blocking calls
+    // Note: combine() only supports up to 5 flows, so we nest combines for 6+ flows
     val uiState: StateFlow<GalleryUiState> = combine(
-        mediaRepository.observeMediaByTree(treeId),
-        memberRepository.observeMembersByTree(treeId),
-        _selectedFilter,
-        _searchQuery,
+        combine(
+            mediaRepository.observeMediaByTree(treeId),
+            memberRepository.observeMembersByTree(treeId),
+            _selectedFilter,
+            _searchQuery
+        ) { mediaList, members, filter, searchQuery ->
+            Tuple4(mediaList, members, filter, searchQuery)
+        },
         _selectedMemberId,
         _viewMode
-    ) { mediaList, members, filter, searchQuery, memberId, viewMode ->
+    ) { (mediaList, members, filter, searchQuery), memberId, viewMode ->
         val membersMap = members.associateBy { it.id }
         val mediaWithMembers = mediaList.mapNotNull { media ->
             val member = membersMap[media.memberId]
@@ -221,3 +226,11 @@ class GalleryViewModel @Inject constructor(
             .mapValues { it.value.size }
     }
 }
+
+// Helper data class for combining multiple flows
+private data class Tuple4<A, B, C, D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)
