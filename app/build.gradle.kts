@@ -30,9 +30,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("../keystore/famy-release.jks")
-            storePassword = "famy123"
+            storePassword = "famy_store_password_123"
             keyAlias = "famy"
-            keyPassword = "famy123"
+            keyPassword = "famy_key_password_123"
         }
     }
 
