@@ -306,6 +306,9 @@ class EditMemberViewModel @Inject constructor(
                 is LocationResult.Error -> {
                     _uiState.update { it.copy(isSearchingBirthPlace = false) }
                 }
+                is LocationResult.Loading -> {
+                    // Loading state is already handled by isSearchingBirthPlace = true above
+                }
             }
         }
     }
@@ -343,6 +346,9 @@ class EditMemberViewModel @Inject constructor(
                 }
                 is LocationResult.Error -> {
                     _uiState.update { it.copy(isSearchingDeathPlace = false) }
+                }
+                is LocationResult.Loading -> {
+                    // Loading state is already handled by isSearchingDeathPlace = true above
                 }
             }
         }
