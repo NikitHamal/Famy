@@ -24,11 +24,31 @@ data class FamilyMember(
     val biography: String? = null,
     val occupation: String? = null,
     val education: String? = null,
+    val educationLevel: EducationLevel = EducationLevel.UNKNOWN,
+    val almaMater: String? = null,
     val interests: List<String> = emptyList(),
+    val skills: List<String> = emptyList(),
+    val achievements: List<String> = emptyList(),
     val careerStatus: CareerStatus = CareerStatus.UNKNOWN,
+    val employer: String? = null,
     val relationshipStatus: RelationshipStatus = RelationshipStatus.UNKNOWN,
     val religion: String? = null,
     val nationality: String? = null,
+    val ethnicity: String? = null,
+    val languages: List<String> = emptyList(),
+    val phone: String? = null,
+    val email: String? = null,
+    val address: String? = null,
+    val addressLatitude: Double? = null,
+    val addressLongitude: Double? = null,
+    val socialLinks: Map<String, String> = emptyMap(),
+    val medicalInfo: String? = null,
+    val bloodType: BloodType? = null,
+    val causeOfDeath: String? = null,
+    val burialPlace: String? = null,
+    val burialLatitude: Double? = null,
+    val burialLongitude: Double? = null,
+    val militaryService: String? = null,
     val notes: String? = null,
     val customFields: Map<String, String> = emptyMap(),
     val generation: Int = 0,
@@ -133,6 +153,45 @@ enum class RelationshipStatus(val displayName: String) {
     companion object {
         fun fromString(value: String): RelationshipStatus {
             return entries.find { it.name.equals(value, ignoreCase = true) } ?: UNKNOWN
+        }
+    }
+}
+
+enum class EducationLevel(val displayName: String) {
+    UNKNOWN("Unknown"),
+    NO_FORMAL_EDUCATION("No Formal Education"),
+    PRIMARY_SCHOOL("Primary School"),
+    MIDDLE_SCHOOL("Middle School"),
+    HIGH_SCHOOL("High School"),
+    VOCATIONAL_TRAINING("Vocational Training"),
+    SOME_COLLEGE("Some College"),
+    ASSOCIATE_DEGREE("Associate Degree"),
+    BACHELOR_DEGREE("Bachelor's Degree"),
+    MASTER_DEGREE("Master's Degree"),
+    DOCTORATE("Doctorate / PhD"),
+    PROFESSIONAL_DEGREE("Professional Degree"),
+    POST_DOCTORAL("Post-Doctoral");
+
+    companion object {
+        fun fromString(value: String): EducationLevel {
+            return entries.find { it.name.equals(value, ignoreCase = true) } ?: UNKNOWN
+        }
+    }
+}
+
+enum class BloodType(val displayName: String) {
+    A_POSITIVE("A+"),
+    A_NEGATIVE("A-"),
+    B_POSITIVE("B+"),
+    B_NEGATIVE("B-"),
+    AB_POSITIVE("AB+"),
+    AB_NEGATIVE("AB-"),
+    O_POSITIVE("O+"),
+    O_NEGATIVE("O-");
+
+    companion object {
+        fun fromString(value: String): BloodType? {
+            return entries.find { it.name.equals(value, ignoreCase = true) }
         }
     }
 }

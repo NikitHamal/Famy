@@ -20,20 +20,22 @@ class FamyApplication : Application(), ImageLoaderFactory {
         return ImageLoader.Builder(this)
             .memoryCache {
                 MemoryCache.Builder(this)
-                    .maxSizePercent(0.25)
+                    .maxSizePercent(0.20) // 20% of app memory for images
+                    .strongReferencesEnabled(true)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(cacheDir.resolve("image_cache"))
-                    .maxSizePercent(0.02)
+                    .maxSizeBytes(100L * 1024 * 1024) // 100MB disk cache
                     .build()
             }
             .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.ENABLED)
             .crossfade(true)
-            .crossfade(200)
-            .respectCacheHeaders(false)
+            .crossfade(150) // Faster crossfade for smoother UX
+            .respectCacheHeaders(false) // Ignore cache headers for local files
+            .allowRgb565(true) // Use RGB_565 for memory efficiency on non-transparent images
             .build()
     }
 }

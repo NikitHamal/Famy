@@ -199,14 +199,15 @@ private fun TimelineEventItem(
 ) {
     val dateFormat = remember { SimpleDateFormat("MMM d", Locale.getDefault()) }
 
-    val (iconColor, iconBackgroundColor) = when (event.type) {
-        TimelineEventType.BIRTH -> MaterialTheme.colorScheme.primary to
-            MaterialTheme.colorScheme.primaryContainer
-        TimelineEventType.DEATH -> MaterialTheme.colorScheme.onSurfaceVariant to
-            MaterialTheme.colorScheme.surfaceVariant
-        TimelineEventType.MARRIAGE -> Color(0xFFE91E63) to Color(0xFFFCE4EC)
-        TimelineEventType.CUSTOM -> MaterialTheme.colorScheme.tertiary to
-            MaterialTheme.colorScheme.tertiaryContainer
+    // Cache theme colors for stability
+    val colorScheme = MaterialTheme.colorScheme
+    val (iconColor, iconBackgroundColor) = remember(event.type, colorScheme) {
+        when (event.type) {
+            TimelineEventType.BIRTH -> colorScheme.primary to colorScheme.primaryContainer
+            TimelineEventType.DEATH -> colorScheme.onSurfaceVariant to colorScheme.surfaceVariant
+            TimelineEventType.MARRIAGE -> Color(0xFFE91E63) to Color(0xFFFCE4EC)
+            TimelineEventType.CUSTOM -> colorScheme.tertiary to colorScheme.tertiaryContainer
+        }
     }
 
     Row(
