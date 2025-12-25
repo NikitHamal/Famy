@@ -94,11 +94,26 @@ data class FamilyMemberEntity(
     @ColumnInfo(name = "education")
     val education: String? = null,
 
+    @ColumnInfo(name = "education_level")
+    val educationLevel: String = "UNKNOWN",
+
+    @ColumnInfo(name = "alma_mater")
+    val almaMater: String? = null,
+
     @ColumnInfo(name = "interests")
     val interests: String? = null,
 
+    @ColumnInfo(name = "skills")
+    val skills: String? = null,
+
+    @ColumnInfo(name = "achievements")
+    val achievements: String? = null,
+
     @ColumnInfo(name = "career_status")
     val careerStatus: String = "UNKNOWN",
+
+    @ColumnInfo(name = "employer")
+    val employer: String? = null,
 
     @ColumnInfo(name = "relationship_status")
     val relationshipStatus: String = "UNKNOWN",
@@ -108,6 +123,51 @@ data class FamilyMemberEntity(
 
     @ColumnInfo(name = "nationality")
     val nationality: String? = null,
+
+    @ColumnInfo(name = "ethnicity")
+    val ethnicity: String? = null,
+
+    @ColumnInfo(name = "languages")
+    val languages: String? = null,
+
+    @ColumnInfo(name = "phone")
+    val phone: String? = null,
+
+    @ColumnInfo(name = "email")
+    val email: String? = null,
+
+    @ColumnInfo(name = "address")
+    val address: String? = null,
+
+    @ColumnInfo(name = "address_latitude")
+    val addressLatitude: Double? = null,
+
+    @ColumnInfo(name = "address_longitude")
+    val addressLongitude: Double? = null,
+
+    @ColumnInfo(name = "social_links")
+    val socialLinks: String? = null,
+
+    @ColumnInfo(name = "medical_info")
+    val medicalInfo: String? = null,
+
+    @ColumnInfo(name = "blood_type")
+    val bloodType: String? = null,
+
+    @ColumnInfo(name = "cause_of_death")
+    val causeOfDeath: String? = null,
+
+    @ColumnInfo(name = "burial_place")
+    val burialPlace: String? = null,
+
+    @ColumnInfo(name = "burial_latitude")
+    val burialLatitude: Double? = null,
+
+    @ColumnInfo(name = "burial_longitude")
+    val burialLongitude: Double? = null,
+
+    @ColumnInfo(name = "military_service")
+    val militaryService: String? = null,
 
     @ColumnInfo(name = "notes")
     val notes: String? = null,

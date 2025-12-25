@@ -27,7 +27,7 @@ import com.famy.tree.data.local.entity.RelationshipEntity
         LifeEventEntity::class,
         MediaEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -58,6 +58,46 @@ abstract class FamyDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Education enhancements
+                db.execSQL("ALTER TABLE family_members ADD COLUMN education_level TEXT NOT NULL DEFAULT 'UNKNOWN'")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN alma_mater TEXT DEFAULT NULL")
+
+                // Skills and achievements
+                db.execSQL("ALTER TABLE family_members ADD COLUMN skills TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN achievements TEXT DEFAULT NULL")
+
+                // Employment details
+                db.execSQL("ALTER TABLE family_members ADD COLUMN employer TEXT DEFAULT NULL")
+
+                // Cultural/demographic info
+                db.execSQL("ALTER TABLE family_members ADD COLUMN ethnicity TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN languages TEXT DEFAULT NULL")
+
+                // Contact information
+                db.execSQL("ALTER TABLE family_members ADD COLUMN phone TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN email TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN address TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN address_latitude REAL DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN address_longitude REAL DEFAULT NULL")
+
+                // Social and medical
+                db.execSQL("ALTER TABLE family_members ADD COLUMN social_links TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN medical_info TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN blood_type TEXT DEFAULT NULL")
+
+                // Death and memorial
+                db.execSQL("ALTER TABLE family_members ADD COLUMN cause_of_death TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN burial_place TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN burial_latitude REAL DEFAULT NULL")
+                db.execSQL("ALTER TABLE family_members ADD COLUMN burial_longitude REAL DEFAULT NULL")
+
+                // Military service
+                db.execSQL("ALTER TABLE family_members ADD COLUMN military_service TEXT DEFAULT NULL")
+            }
+        }
+
         fun getInstance(context: Context): FamyDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context).also { INSTANCE = it }
@@ -70,7 +110,7 @@ abstract class FamyDatabase : RoomDatabase() {
                 FamyDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .fallbackToDestructiveMigration()
                 .build()
         }

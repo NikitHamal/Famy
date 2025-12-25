@@ -17,13 +17,14 @@ import com.famy.tree.domain.usecase.BuildTreeStructureUseCase
 import com.famy.tree.domain.usecase.CalculateTreeLayoutUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -67,6 +68,9 @@ class TreeViewModel @Inject constructor(
     private val _rootNode = MutableStateFlow<TreeNode?>(null)
     private val _layoutNodes = MutableStateFlow<List<TreeNode>>(emptyList())
     private val _bounds = MutableStateFlow(TreeBounds.EMPTY)
+
+    // Animation job for smooth navigation
+    private var animationJob: Job? = null
 
     // Track data versions to detect actual changes
     private var lastMemberIds: Set<Long> = emptySet()
@@ -208,10 +212,80 @@ class TreeViewModel @Inject constructor(
         _offsetY.value = -(node.y + config.nodeHeight / 2)
     }
 
+    /**
+     * Navigate to a member with smooth animation
+     */
+    fun navigateToMember(memberId: Long, animate: Boolean = true) {
+        val node = _layoutNodes.value.find { it.member.id == memberId } ?: return
+        val config = _layoutConfig.value
+
+        val targetX = -(node.x + config.nodeWidth / 2)
+        val targetY = -(node.y + config.nodeHeight / 2)
+
+        if (!animate) {
+            _offsetX.value = targetX
+            _offsetY.value = targetY
+            _selectedMemberId.value = memberId
+            return
+        }
+
+        // Cancel any existing animation
+        animationJob?.cancel()
+
+        animationJob = viewModelScope.launch {
+            val startX = _offsetX.value
+            val startY = _offsetY.value
+            val steps = 20
+            val duration = 300L
+
+            for (i in 1..steps) {
+                val progress = i.toFloat() / steps
+                // Ease-out interpolation for smooth deceleration
+                val easedProgress = 1f - (1f - progress) * (1f - progress)
+
+                _offsetX.value = startX + (targetX - startX) * easedProgress
+                _offsetY.value = startY + (targetY - startY) * easedProgress
+
+                delay(duration / steps)
+            }
+
+            _selectedMemberId.value = memberId
+        }
+    }
+
     fun resetView() {
+        // Cancel any existing animation
+        animationJob?.cancel()
+
         _scale.value = 1f
         _offsetX.value = 0f
         _offsetY.value = 0f
+    }
+
+    /**
+     * Reset view with smooth animation
+     */
+    fun resetViewAnimated() {
+        animationJob?.cancel()
+
+        animationJob = viewModelScope.launch {
+            val startScale = _scale.value
+            val startX = _offsetX.value
+            val startY = _offsetY.value
+            val steps = 15
+            val duration = 200L
+
+            for (i in 1..steps) {
+                val progress = i.toFloat() / steps
+                val easedProgress = 1f - (1f - progress) * (1f - progress)
+
+                _scale.value = startScale + (1f - startScale) * easedProgress
+                _offsetX.value = startX * (1f - easedProgress)
+                _offsetY.value = startY * (1f - easedProgress)
+
+                delay(duration / steps)
+            }
+        }
     }
 
     fun setRootMember(memberId: Long) {

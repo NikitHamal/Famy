@@ -14,11 +14,10 @@ import com.famy.tree.domain.repository.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -54,121 +53,104 @@ class GalleryViewModel @Inject constructor(
 
     private val treeId: Long = savedStateHandle.get<Long>("treeId") ?: 0L
 
-    private val _uiState = MutableStateFlow(GalleryUiState())
-    val uiState: StateFlow<GalleryUiState> = _uiState.asStateFlow()
+    // Filter state - separated to avoid unnecessary recomputations
+    private val _selectedFilter = MutableStateFlow<MediaKind?>(null)
+    private val _searchQuery = MutableStateFlow("")
+    private val _selectedMemberId = MutableStateFlow<Long?>(null)
+    private val _viewMode = MutableStateFlow(GalleryViewMode.GRID)
+    private val _selectedMedia = MutableStateFlow<Media?>(null)
+    private val _isDeleting = MutableStateFlow(false)
+    private val _error = MutableStateFlow<String?>(null)
 
-    init {
-        loadGallery()
-    }
+    // Reactive uiState using Flow.combine - no blocking calls
+    val uiState: StateFlow<GalleryUiState> = combine(
+        mediaRepository.observeMediaByTree(treeId),
+        memberRepository.observeMembersByTree(treeId),
+        _selectedFilter,
+        _searchQuery,
+        _selectedMemberId,
+        _viewMode
+    ) { mediaList, members, filter, searchQuery, memberId, viewMode ->
+        val membersMap = members.associateBy { it.id }
+        val mediaWithMembers = mediaList.mapNotNull { media ->
+            val member = membersMap[media.memberId]
+            if (member != null) MediaWithMember(media, member) else null
+        }.sortedByDescending { it.media.createdAt }
 
-    private fun loadGallery() {
-        viewModelScope.launch {
-            try {
-                _uiState.update { it.copy(isLoading = true) }
+        val filtered = filterMediaInternal(mediaWithMembers, filter, searchQuery, memberId)
+        val totalSize = formatSize(mediaList.sumOf { it.fileSize })
 
-                val members = memberRepository.observeMembersByTree(treeId).first()
-                val mediaFlow = mediaRepository.observeMediaByTree(treeId)
-
-                mediaFlow.collect { mediaList ->
-                    val membersMap = members.associateBy { it.id }
-                    val mediaWithMembers = mediaList.mapNotNull { media ->
-                        val member = membersMap[media.memberId]
-                        if (member != null) {
-                            MediaWithMember(media, member)
-                        } else null
-                    }.sortedByDescending { it.media.createdAt }
-
-                    val totalSize = formatSize(mediaList.sumOf { it.fileSize })
-
-                    _uiState.update { state ->
-                        val filtered = filterMedia(mediaWithMembers, state)
-                        state.copy(
-                            isLoading = false,
-                            mediaItems = mediaWithMembers,
-                            filteredMedia = filtered,
-                            members = members,
-                            totalSize = totalSize,
-                            totalCount = mediaList.size
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Failed to load gallery"
-                    )
-                }
-            }
-        }
-    }
+        GalleryUiState(
+            isLoading = false,
+            mediaItems = mediaWithMembers,
+            filteredMedia = filtered,
+            selectedFilter = filter,
+            searchQuery = searchQuery,
+            selectedMemberId = memberId,
+            members = members,
+            totalSize = totalSize,
+            totalCount = mediaList.size,
+            selectedMedia = _selectedMedia.value,
+            showMediaViewer = _selectedMedia.value != null,
+            error = _error.value,
+            isDeleting = _isDeleting.value,
+            viewMode = viewMode
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = GalleryUiState()
+    )
 
     fun setFilter(filter: MediaKind?) {
-        _uiState.update { state ->
-            val newState = state.copy(selectedFilter = filter)
-            newState.copy(filteredMedia = filterMedia(state.mediaItems, newState))
-        }
+        _selectedFilter.value = filter
     }
 
     fun setSearchQuery(query: String) {
-        _uiState.update { state ->
-            val newState = state.copy(searchQuery = query)
-            newState.copy(filteredMedia = filterMedia(state.mediaItems, newState))
-        }
+        _searchQuery.value = query
     }
 
     fun setMemberFilter(memberId: Long?) {
-        _uiState.update { state ->
-            val newState = state.copy(selectedMemberId = memberId)
-            newState.copy(filteredMedia = filterMedia(state.mediaItems, newState))
-        }
+        _selectedMemberId.value = memberId
     }
 
     fun setViewMode(mode: GalleryViewMode) {
-        _uiState.update { it.copy(viewMode = mode) }
+        _viewMode.value = mode
     }
 
     fun selectMedia(media: Media?) {
-        _uiState.update { it.copy(selectedMedia = media, showMediaViewer = media != null) }
+        _selectedMedia.value = media
     }
 
     fun dismissMediaViewer() {
-        _uiState.update { it.copy(selectedMedia = null, showMediaViewer = false) }
+        _selectedMedia.value = null
     }
 
     fun clearError() {
-        _uiState.update { it.copy(error = null) }
+        _error.value = null
     }
 
     fun clearFilters() {
-        _uiState.update { state ->
-            val newState = state.copy(
-                selectedFilter = null,
-                searchQuery = "",
-                selectedMemberId = null
-            )
-            newState.copy(filteredMedia = state.mediaItems)
-        }
+        _selectedFilter.value = null
+        _searchQuery.value = ""
+        _selectedMemberId.value = null
     }
 
     val hasActiveFilters: Boolean
-        get() = with(_uiState.value) {
-            selectedFilter != null || searchQuery.isNotBlank() || selectedMemberId != null
-        }
+        get() = _selectedFilter.value != null ||
+                _searchQuery.value.isNotBlank() ||
+                _selectedMemberId.value != null
 
     fun deleteMedia(mediaId: Long) {
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isDeleting = true) }
+                _isDeleting.value = true
                 mediaRepository.deleteMedia(mediaId)
-                _uiState.update { it.copy(isDeleting = false, selectedMedia = null, showMediaViewer = false) }
+                _isDeleting.value = false
+                _selectedMedia.value = null
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isDeleting = false,
-                        error = e.message ?: "Failed to delete media"
-                    )
-                }
+                _isDeleting.value = false
+                _error.value = e.message ?: "Failed to delete media"
             }
         }
     }
@@ -195,9 +177,7 @@ class GalleryViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(error = e.message ?: "Failed to add media")
-                }
+                _error.value = e.message ?: "Failed to add media"
             }
         }
     }
@@ -210,17 +190,19 @@ class GalleryViewModel @Inject constructor(
         }
     }
 
-    private fun filterMedia(
+    private fun filterMediaInternal(
         items: List<MediaWithMember>,
-        state: GalleryUiState
+        filter: MediaKind?,
+        searchQuery: String,
+        memberId: Long?
     ): List<MediaWithMember> {
         return items.filter { item ->
-            val matchesFilter = state.selectedFilter == null || item.media.type == state.selectedFilter
-            val matchesMember = state.selectedMemberId == null || item.media.memberId == state.selectedMemberId
-            val matchesSearch = state.searchQuery.isBlank() ||
-                    item.media.title?.contains(state.searchQuery, ignoreCase = true) == true ||
-                    item.media.description?.contains(state.searchQuery, ignoreCase = true) == true ||
-                    item.member.fullName.contains(state.searchQuery, ignoreCase = true)
+            val matchesFilter = filter == null || item.media.type == filter
+            val matchesMember = memberId == null || item.media.memberId == memberId
+            val matchesSearch = searchQuery.isBlank() ||
+                    item.media.title?.contains(searchQuery, ignoreCase = true) == true ||
+                    item.media.description?.contains(searchQuery, ignoreCase = true) == true ||
+                    item.member.fullName.contains(searchQuery, ignoreCase = true)
             matchesFilter && matchesMember && matchesSearch
         }
     }
@@ -235,7 +217,7 @@ class GalleryViewModel @Inject constructor(
     }
 
     fun getMediaTypeStats(): Map<MediaKind, Int> {
-        return _uiState.value.mediaItems.groupBy { it.media.type }
+        return uiState.value.mediaItems.groupBy { it.media.type }
             .mapValues { it.value.size }
     }
 }

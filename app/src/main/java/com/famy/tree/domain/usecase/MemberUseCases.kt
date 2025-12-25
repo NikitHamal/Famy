@@ -35,44 +35,28 @@ class CreateMemberUseCase @Inject constructor(
     private val lifeEventRepository: LifeEventRepository
 ) {
     suspend operator fun invoke(
-        treeId: Long,
-        firstName: String,
-        lastName: String? = null,
-        gender: Gender = Gender.UNKNOWN,
-        birthDate: Long? = null,
-        birthPlace: String? = null,
-        isLiving: Boolean = true,
+        member: FamilyMember,
         setAsRoot: Boolean = false
     ): FamilyMember {
-        val member = memberRepository.createMember(
-            FamilyMember(
-                treeId = treeId,
-                firstName = firstName,
-                lastName = lastName,
-                gender = gender,
-                birthDate = birthDate,
-                birthPlace = birthPlace,
-                isLiving = isLiving
-            )
-        )
+        val createdMember = memberRepository.createMember(member)
 
-        if (birthDate != null) {
+        if (member.birthDate != null) {
             lifeEventRepository.createEvent(
                 LifeEvent(
-                    memberId = member.id,
+                    memberId = createdMember.id,
                     type = LifeEventKind.BIRTH,
                     title = "Born",
-                    eventDate = birthDate,
-                    eventPlace = birthPlace
+                    eventDate = member.birthDate,
+                    eventPlace = member.birthPlace
                 )
             )
         }
 
         if (setAsRoot) {
-            treeRepository.setRootMember(treeId, member.id)
+            treeRepository.setRootMember(member.treeId, createdMember.id)
         }
 
-        return member
+        return createdMember
     }
 }
 

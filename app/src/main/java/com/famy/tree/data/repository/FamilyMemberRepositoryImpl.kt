@@ -4,7 +4,9 @@ import com.famy.tree.data.local.dao.FamilyMemberDao
 import com.famy.tree.data.local.dao.FamilyTreeDao
 import com.famy.tree.data.local.dao.RelationshipDao
 import com.famy.tree.data.local.entity.FamilyMemberEntity
+import com.famy.tree.domain.model.BloodType
 import com.famy.tree.domain.model.CareerStatus
+import com.famy.tree.domain.model.EducationLevel
 import com.famy.tree.domain.model.FamilyMember
 import com.famy.tree.domain.model.Gender
 import com.famy.tree.domain.model.RelationshipStatus
@@ -188,13 +190,33 @@ class FamilyMemberRepositoryImpl @Inject constructor(
         biography = biography,
         occupation = occupation,
         education = education,
-        interests = parseInterests(interests),
+        educationLevel = EducationLevel.fromString(educationLevel),
+        almaMater = almaMater,
+        interests = parseStringList(interests),
+        skills = parseStringList(skills),
+        achievements = parseStringList(achievements),
         careerStatus = CareerStatus.fromString(careerStatus),
+        employer = employer,
         relationshipStatus = RelationshipStatus.fromString(relationshipStatus),
         religion = religion,
         nationality = nationality,
+        ethnicity = ethnicity,
+        languages = parseStringList(languages),
+        phone = phone,
+        email = email,
+        address = address,
+        addressLatitude = addressLatitude,
+        addressLongitude = addressLongitude,
+        socialLinks = parseStringMap(socialLinks),
+        medicalInfo = medicalInfo,
+        bloodType = bloodType?.let { BloodType.fromString(it) },
+        causeOfDeath = causeOfDeath,
+        burialPlace = burialPlace,
+        burialLatitude = burialLatitude,
+        burialLongitude = burialLongitude,
+        militaryService = militaryService,
         notes = notes,
-        customFields = parseCustomFields(customFields),
+        customFields = parseStringMap(customFields),
         generation = generation,
         paternalLine = paternalLine,
         createdAt = createdAt,
@@ -223,20 +245,40 @@ class FamilyMemberRepositoryImpl @Inject constructor(
         biography = biography,
         occupation = occupation,
         education = education,
-        interests = serializeInterests(interests),
+        educationLevel = educationLevel.name,
+        almaMater = almaMater,
+        interests = serializeStringList(interests),
+        skills = serializeStringList(skills),
+        achievements = serializeStringList(achievements),
         careerStatus = careerStatus.name,
+        employer = employer,
         relationshipStatus = relationshipStatus.name,
         religion = religion,
         nationality = nationality,
+        ethnicity = ethnicity,
+        languages = serializeStringList(languages),
+        phone = phone,
+        email = email,
+        address = address,
+        addressLatitude = addressLatitude,
+        addressLongitude = addressLongitude,
+        socialLinks = serializeStringMap(socialLinks),
+        medicalInfo = medicalInfo,
+        bloodType = bloodType?.name,
+        causeOfDeath = causeOfDeath,
+        burialPlace = burialPlace,
+        burialLatitude = burialLatitude,
+        burialLongitude = burialLongitude,
+        militaryService = militaryService,
         notes = notes,
-        customFields = serializeCustomFields(customFields),
+        customFields = serializeStringMap(customFields),
         generation = generation,
         paternalLine = paternalLine,
         createdAt = createdAt,
         updatedAt = System.currentTimeMillis()
     )
 
-    private fun parseCustomFields(json: String?): Map<String, String> {
+    private fun parseStringMap(json: String?): Map<String, String> {
         if (json.isNullOrBlank()) return emptyMap()
         return try {
             kotlinx.serialization.json.Json.decodeFromString(json)
@@ -245,15 +287,15 @@ class FamilyMemberRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun serializeCustomFields(fields: Map<String, String>): String? {
-        if (fields.isEmpty()) return null
+    private fun serializeStringMap(map: Map<String, String>): String? {
+        if (map.isEmpty()) return null
         return kotlinx.serialization.json.Json.encodeToString(
             kotlinx.serialization.serializer(),
-            fields
+            map
         )
     }
 
-    private fun parseInterests(json: String?): List<String> {
+    private fun parseStringList(json: String?): List<String> {
         if (json.isNullOrBlank()) return emptyList()
         return try {
             kotlinx.serialization.json.Json.decodeFromString(json)
@@ -262,11 +304,11 @@ class FamilyMemberRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun serializeInterests(interests: List<String>): String? {
-        if (interests.isEmpty()) return null
+    private fun serializeStringList(list: List<String>): String? {
+        if (list.isEmpty()) return null
         return kotlinx.serialization.json.Json.encodeToString(
             kotlinx.serialization.serializer(),
-            interests
+            list
         )
     }
 }
